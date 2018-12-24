@@ -4,8 +4,6 @@
 #include <Elementary.h>
 #include <Emotion.h>
 
-static Eina_Bool _piped = EINA_FALSE;
-
 static void
 _media_position_update(void *data EINA_UNUSED, const Efl_Event *ev)
 {
@@ -18,7 +16,6 @@ static void
 _media_finished(void *data EINA_UNUSED, const Efl_Event *ev)
 {
    emotion_object_play_set(ev->object, EINA_FALSE);
-   if (!_piped) elm_exit();
 }
 
 static Eina_Bool
@@ -92,19 +89,7 @@ int main(int argc, char **argv)
         emotion_object_file_set(emo, argv[1]);
         emotion_object_play_set(emo, EINA_TRUE);
      }
-   _piped = !isatty(fileno(stdin));
-   if (!_piped)
-     {
-        if (argc != 2)
-          {
-             fprintf(stderr, "Argument (file to play) required\n");
-             exit(1);
-          }
-     }
-   else
-     {
-        ecore_main_fd_handler_add(STDIN_FILENO, ECORE_FD_READ, _on_stdin, emo, NULL, NULL);
-     }
+   ecore_main_fd_handler_add(STDIN_FILENO, ECORE_FD_READ, _on_stdin, emo, NULL, NULL);
 
    elm_run();
 
