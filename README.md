@@ -36,6 +36,7 @@ In another terminal (real writer):
 ```
 echo "PAUSE" > pipe
 echo "SHOW_PROGRESS" > pipe
+echo "FILE filename" > pipe
 ...
 ```
 

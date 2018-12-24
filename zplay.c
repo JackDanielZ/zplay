@@ -58,6 +58,12 @@ _on_stdin(void *data, Ecore_Fd_Handler *fdh EINA_UNUSED)
            (emo, EFL_CANVAS_VIDEO_EVENT_POSITION_CHANGE, _media_position_update, NULL);
         _progress = EINA_FALSE;
      }
+   else if (!strncmp(line, "FILE ", 5))
+     {
+        char *eol = strchr(line, '\n');
+        *eol = '\0';
+        emotion_object_file_set(emo, line + 5);
+     }
    free(line);
    return ECORE_CALLBACK_RENEW;
 }
