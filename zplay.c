@@ -38,7 +38,11 @@ _on_stdin(void *data, Ecore_Fd_Handler *fdh EINA_UNUSED)
      }
    if (!strcmp(line, "PAUSE\n")) emotion_object_play_set(emo, EINA_FALSE);
    else if (!strcmp(line, "PLAY\n")) emotion_object_play_set(emo, EINA_TRUE);
-   else if (!strcmp(line, "STOP\n")) emotion_object_play_set(emo, EINA_FALSE);
+   else if (!strcmp(line, "STOP\n"))
+     {
+        emotion_object_play_set(emo, EINA_FALSE);
+        emotion_object_position_set(emo, 0.0);
+     }
    else if (!strcmp(line, "SHOW_PROGRESS\n"))
      {
         if (!_progress)
