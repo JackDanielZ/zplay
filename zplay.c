@@ -8,8 +8,8 @@ static void
 _media_position_update(void *data EINA_UNUSED, const Efl_Event *ev)
 {
    int pos = (int)emotion_object_position_get(ev->object);
-   int len = (int)emotion_object_play_length_get(ev->object);
-   printf("Position: %d / %d\n", pos, len);
+   int total = (int)emotion_object_play_length_get(ev->object);
+   printf("POSITION: %d / %d\n", pos, total);
 }
 
 static void
@@ -53,6 +53,20 @@ _on_stdin(void *data, Ecore_Fd_Handler *fdh EINA_UNUSED)
              efl_event_callback_del
                 (emo, EFL_CANVAS_VIDEO_EVENT_POSITION_CHANGE, _media_position_update, NULL);
              _progress = EINA_FALSE;
+          }
+        else if (!strncmp(line, "POSITION", 8))
+          {
+             if (line[8] == ' ')
+               {
+                  int pos = atoi(line + 9);
+                  emotion_object_position_set(emo, pos);
+               }
+             else
+               {
+                  int pos = (int)emotion_object_position_get(emo);
+                  int total = (int)emotion_object_play_length_get(emo);
+                  printf("POSITION: %d / %d\n", pos, total);
+               }
           }
         else if (!strncmp(line, "FILE ", 5))
           {
