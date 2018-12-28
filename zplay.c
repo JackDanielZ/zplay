@@ -57,6 +57,19 @@ _on_stdin(void *data, Ecore_Fd_Handler *fdh EINA_UNUSED)
           {
              emotion_object_file_set(emo, line + 5);
           }
+        else if (!strncmp(line, "VOLUME", 6))
+          {
+             if (line[6] == ' ')
+               {
+                  int vol = atoi(line + 7);
+                  emotion_object_audio_volume_set(emo, vol / 100.0);
+               }
+             else
+               {
+                  double vol = emotion_object_audio_volume_get(emo);
+                  printf("VOLUME: %d\n", (int)(vol * 100));
+               }
+          }
         line += len + 1;
         nb -= (len + 1);
         if (nb < 0) nb = 0;
