@@ -16,7 +16,7 @@ static void
 _media_finished(void *data EINA_UNUSED, const Efl_Event *ev)
 {
    emotion_object_play_set(ev->object, EINA_FALSE);
-   emotion_object_position_set(ev->object, 0.0);
+   printf("STOPPED\n");
 }
 
 static Eina_Bool
