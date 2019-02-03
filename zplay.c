@@ -4,6 +4,15 @@
 #include <Elementary.h>
 #include <Emotion.h>
 
+typedef struct
+{
+   Eina_Stringshare *id;
+   Eina_Stringshare *path;
+} Song_Info;
+
+static Eina_List *_queue = NULL, *_cur_queue_item = NULL;
+static Eina_Bool _pause_on_notfound = EINA_FALSE;
+
 static void
 _media_position_update(void *data EINA_UNUSED, const Efl_Event *ev)
 {
@@ -17,6 +26,35 @@ _media_finished(void *data EINA_UNUSED, const Efl_Event *ev)
 {
    emotion_object_play_set(ev->object, EINA_FALSE);
    printf("STOPPED\n");
+}
+
+static void
+_item_play(Eo *emo, Song_Info *info)
+{
+   if (ecore_file_exists(info->path))
+     {
+        emotion_object_play_set(emo, EINA_FALSE);
+        emotion_object_position_set(emo, 0.0);
+        emotion_object_file_set(emo, info->path);
+        emotion_object_play_set(emo, EINA_TRUE);
+     }
+   else printf("FILE_NOT_FOUND: %s\n", info->id);
+}
+
+static Song_Info *
+_item_find(const char *id)
+{
+   Eina_List *itr;
+   Song_Info *info;
+   Eina_Stringshare *shr = eina_stringshare_add(id);
+   EINA_LIST_FOREACH(_queue, itr, info)
+     {
+        if (info->id == shr) goto end;
+     }
+   info = NULL;
+end:
+   eina_stringshare_del(shr);
+   return info;
 }
 
 static Eina_Bool
@@ -33,11 +71,37 @@ _on_stdin(void *data, Ecore_Fd_Handler *fdh EINA_UNUSED)
         if (eol) *eol = '\0';
         int len = strlen(line);
         if (!strcmp(line, "PAUSE")) emotion_object_play_set(emo, EINA_FALSE);
-        else if (!strcmp(line, "PLAY")) emotion_object_play_set(emo, EINA_TRUE);
+        else if (!strncmp(line, "PLAY", 4))
+          {
+             if (line[4] == ' ')
+               {
+                  Song_Info *info = _item_find(line + 5);
+                  if (info)
+                    {
+                       _cur_queue_item = eina_list_data_find_list(_queue, info);
+                       _item_play(emo, info);
+                    }
+               }
+             else emotion_object_play_set(emo, EINA_TRUE);
+          }
         else if (!strcmp(line, "STOP"))
           {
              emotion_object_play_set(emo, EINA_FALSE);
              emotion_object_position_set(emo, 0.0);
+          }
+        else if (!strcmp(line, "NEXT"))
+          {
+             Eina_List *next = eina_list_next(_cur_queue_item);
+             if (!next) next = _queue;
+             _cur_queue_item = next;
+             _item_play(emo, eina_list_data_get(next));
+          }
+        else if (!strcmp(line, "PREV"))
+          {
+             Eina_List *prev = eina_list_prev(_cur_queue_item);
+             if (!prev) prev = eina_list_last(_queue);
+             _cur_queue_item = prev;
+             _item_play(emo, eina_list_data_get(prev));
           }
         else if (!strcmp(line, "SHOW_PROGRESS"))
           {
@@ -68,9 +132,33 @@ _on_stdin(void *data, Ecore_Fd_Handler *fdh EINA_UNUSED)
                   printf("POSITION: %d / %d\n", pos, total);
                }
           }
-        else if (!strncmp(line, "FILE ", 5))
+        else if (!strcmp(line, "PAUSE_ON_NOTFOUND"))
           {
-             emotion_object_file_set(emo, line + 5);
+             _pause_on_notfound = EINA_TRUE;
+          }
+        else if (!strncmp(line, "ADD_TO_QUEUE ", 13))
+          {
+             Song_Info *info;
+             char *spc = strchr(line + 13, ' ');
+             *spc = '\0';
+             info = _item_find(line + 13);
+             if (info)
+               {
+                  eina_stringshare_del(info->path);
+                  info->path = eina_stringshare_add(spc + 1);
+               }
+             else
+               {
+                  info = calloc(1, sizeof(*info));
+                  info->id = eina_stringshare_add(line + 13);
+                  info->path = eina_stringshare_add(spc + 1);
+                  _queue = eina_list_append(_queue, info);
+               }
+          }
+        else if (!strncmp(line, "REMOVE_FROM_QUEUE ", 18))
+          {
+             Song_Info *info = _item_find(line + 18);
+             if (info) _queue = eina_list_remove(_queue, info);
           }
         else if (!strncmp(line, "VOLUME", 6))
           {
