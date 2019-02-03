@@ -14,6 +14,7 @@ static Eo *_emo = NULL;
 
 static Eina_List *_queue = NULL, *_cur_queue_item = NULL;
 static Eina_Bool _pause_on_notfound = EINA_FALSE;
+static Eina_Bool _loop = EINA_FALSE;
 
 static void
 _media_position_update(void *data EINA_UNUSED, const Efl_Event *ev)
@@ -21,13 +22,6 @@ _media_position_update(void *data EINA_UNUSED, const Efl_Event *ev)
    int pos = (int)emotion_object_position_get(ev->object);
    int total = (int)emotion_object_play_length_get(ev->object);
    printf("POSITION: %d / %d\n", pos, total);
-}
-
-static void
-_media_finished(void *data EINA_UNUSED, const Efl_Event *ev)
-{
-   emotion_object_play_set(ev->object, EINA_FALSE);
-   printf("STOPPED\n");
 }
 
 static void
@@ -41,6 +35,21 @@ _item_play(Song_Info *info)
         emotion_object_play_set(_emo, EINA_TRUE);
      }
    else printf("FILE_NOT_FOUND: %s\n", info->id);
+}
+
+static void
+_media_finished(void *data EINA_UNUSED, const Efl_Event *ev)
+{
+   Eina_List *next = eina_list_next(_cur_queue_item);
+   emotion_object_play_set(ev->object, EINA_FALSE);
+   printf("STOPPED\n");
+   if (!next && _loop) next = _queue;
+   if (next)
+     {
+        _cur_queue_item = next;
+        _item_play(eina_list_data_get(next));
+     }
+   else _cur_queue_item = _queue;
 }
 
 static Song_Info *
@@ -173,6 +182,11 @@ _on_stdin(void *data EINA_UNUSED, Ecore_Fd_Handler *fdh EINA_UNUSED)
                   double vol = emotion_object_audio_volume_get(_emo);
                   printf("VOLUME: %d\n", (int)(vol * 100));
                }
+          }
+        else if (!strncmp(line, "LOOP ", 5))
+          {
+             if (!strcmp(line + 5, "ON")) _loop = EINA_TRUE;
+             else if (!strcmp(line + 5, "OFF")) _loop = EINA_FALSE;
           }
         line += len + 1;
         nb -= (len + 1);
