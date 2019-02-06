@@ -33,6 +33,7 @@ _item_play(Song_Info *info)
         emotion_object_position_set(_emo, 0.0);
         emotion_object_file_set(_emo, info->path);
         emotion_object_play_set(_emo, EINA_TRUE);
+        printf("PLAYING: %s\n", info->id);
      }
    else printf("FILE_NOT_FOUND: %s\n", info->id);
 }
