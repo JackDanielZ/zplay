@@ -73,12 +73,14 @@ static Eina_Bool
 _on_stdin(void *data EINA_UNUSED, Ecore_Fd_Handler *fdh EINA_UNUSED)
 {
    static Eina_Bool _progress = EINA_FALSE;
+   static int _nb_0B = 0;
    char *line = alloca(1024);
    ssize_t nb = read(STDIN_FILENO, line, 1024);
 
    while (nb > 0)
      {
         char *eol = strchr(line, '\n');
+        _nb_0B = 0;
         if (eol) *eol = '\0';
         int len = strlen(line);
         if (!strcmp(line, "PAUSE")) emotion_object_play_set(_emo, EINA_FALSE);
@@ -192,6 +194,16 @@ _on_stdin(void *data EINA_UNUSED, Ecore_Fd_Handler *fdh EINA_UNUSED)
         line += len + 1;
         nb -= (len + 1);
         if (nb < 0) nb = 0;
+     }
+   if (nb == 0)
+     {
+        _nb_0B++;
+        if (_nb_0B > 10)
+          {
+             fprintf(stderr, "ERROR: too much 0 bytes returned on read from stdin: %s\n", strerror(errno));
+             elm_exit();
+             return ECORE_CALLBACK_CANCEL;
+          }
      }
    if (nb < 0)
      {
